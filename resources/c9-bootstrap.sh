@@ -1,7 +1,7 @@
 #!/bin/bash -v
 date
 
-WEBSITE=https://github.com/mstfldmr/MachineHealthWorkshop/raw/master
+REPOSITORY=https://github.com/mstfldmr/MachineHealthWorkshop
 GGLINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.9.4/greengrass-linux-x86-64-1.9.4.tar.gz
 GG_VER_CUR=1.9.4
 INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
@@ -9,10 +9,15 @@ INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
 
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
-
 . /home/ec2-user/.bashrc
 
+
 echo '=== INSTALL SOFTWARE ==='
+cd /tmp
+git clone ${REPOSITORY}
+
+
+
 yum -y remove aws-cli
 yum -y install sqlite telnet jq strace tree gcc glibc-static python27-pip
 
@@ -37,7 +42,7 @@ yum -y install gcc bzip2-devel ncurses-devel gdbm-devel xz-devel \
 
 test ! -d /usr/local/src && mkdir -p /usr/local/src
 cd /usr/local/src
-wget ${WEBSITE}/resources/python37-compiled.tar.gz
+cp /tmp/MachineHealthWorkshop/resources/python37-compiled.tar.gz ./
 tar zxf python37-compiled.tar.gz
 cd Python-3.7.0/
 make install
@@ -129,8 +134,9 @@ cd /tmp/
 test ! -d $INFERENCE_LAMBDA_DIR && mkdir -p $INFERENCE_LAMBDA_DIR
 
 
-wget ${WEBSITE}/resources/inference_lambda.tar.gz
-tar -xzvf inference_lambda.tar.gz -C ${INFERENCE_LAMBDA_DIR}
+tar -xzvf /tmp/MachineHealthWorkshop/lambdas/inference_lambda.tar.gz -C ${INFERENCE_LAMBDA_DIR}
+
+
 echo '=== PREPARE REBOOT in 1 minute with at ==='
 FILE=$(mktemp)
 echo $FILE
