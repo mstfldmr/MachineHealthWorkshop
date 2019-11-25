@@ -1,11 +1,10 @@
 #!/bin/bash -v
 date
 
-DOMAIN_NAME=d2kq1dzvc5e22d.cloudfront.net
 WEBSITE=https://github.com/mstfldmr/MachineHealthWorkshop/raw/master
 GGLINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.9.4/greengrass-linux-x86-64-1.9.4.tar.gz
 GG_VER_CUR=1.9.4
-INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/GGMLInference
+INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
 
 
 echo LANG=en_US.utf-8 >> /etc/environment
@@ -38,7 +37,7 @@ yum -y install gcc bzip2-devel ncurses-devel gdbm-devel xz-devel \
 
 test ! -d /usr/local/src && mkdir -p /usr/local/src
 cd /usr/local/src
-wget ${WEBSITE}/python37-compiled.tar.gz
+wget ${WEBSITE}/resources/python37-compiled.tar.gz
 tar zxf python37-compiled.tar.gz
 cd Python-3.7.0/
 make install
@@ -120,14 +119,14 @@ mount -a
 echo '=== Install Greengrass ==='
 
 cd /tmp/
-wget ${GGLINK}
+wget ${GG_LINK}/${GG_FILE}
 tar -xzvf ${GG_FILE} -C /
 
 echo '=== PREPARE Greengrass ML WORKSHOP ==='
 
 cd /tmp/
 
-test ! -d $GGMLINFERENCE_DIR && mkdir -p $GGMLINFERENCE_DIR
+test ! -d $INFERENCE_LAMBDA_DIR && mkdir -p $INFERENCE_LAMBDA_DIR
 
 
 wget ${WEBSITE}/resources/inference_lambda.tar.gz
