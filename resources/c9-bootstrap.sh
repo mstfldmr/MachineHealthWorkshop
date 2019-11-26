@@ -2,7 +2,8 @@
 date
 
 REPOSITORY=https://github.com/mstfldmr/MachineHealthWorkshop
-GGLINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.9.4/greengrass-linux-x86-64-1.9.4.tar.gz
+GG_LINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.9.4/greengrass-linux-x86-64-1.9.4.tar.gz
+GG_FILE=greengrass-linux-x86-64-1.9.4.tar.gz
 GG_VER_CUR=1.9.4
 INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
 
@@ -62,6 +63,7 @@ done
 
 
 echo '=== NodeJS ==='
+rm -rf /home/ec2-user/.nvm
 curl -sL https://rpm.nodesource.com/setup_10.x | sudo bash -
 yum -y install nodejs
 ln -s /usr/bin/node /usr/bin/nodejs8.10
@@ -124,7 +126,7 @@ mount -a
 echo '=== Install Greengrass ==='
 
 cd /tmp/
-wget ${GG_LINK}/${GG_FILE}
+wget ${GG_LINK}
 tar -xzvf ${GG_FILE} -C /
 
 
