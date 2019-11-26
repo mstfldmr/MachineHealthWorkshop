@@ -64,7 +64,7 @@ done
 echo '=== NodeJS ==='
 curl -sL https://rpm.nodesource.com/setup_10.x | sudo bash -
 yum -y install nodejs
-ln -s /usr/bin/nodejs /usr/bin/nodejs8.10
+ln -s /usr/bin/node /usr/bin/nodejs8.10
 
 
 echo '=== CONFIGURE awscli and setting ENVIRONMENT VARS ==='
@@ -127,13 +127,12 @@ cd /tmp/
 wget ${GG_LINK}/${GG_FILE}
 tar -xzvf ${GG_FILE} -C /
 
+
 echo '=== PREPARE Greengrass ML WORKSHOP ==='
 
 cd /tmp/
 
 test ! -d $INFERENCE_LAMBDA_DIR && mkdir -p $INFERENCE_LAMBDA_DIR
-
-
 tar -xzvf /tmp/MachineHealthWorkshop/lambdas/inference_lambda.tar.gz -C ${INFERENCE_LAMBDA_DIR}
 
 
