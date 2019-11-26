@@ -77,6 +77,7 @@ echo '[default]' > /home/ec2-user/.aws/config
 echo 'output = json' >> /home/ec2-user/.aws/config
 echo "region = $REGION" >> /home/ec2-user/.aws/config
 chmod 400 /home/ec2-user/.aws/config
+chown -R ec2-user:ec2-user /home/ec2-user/.aws
 IOT_ENDPOINT_OLD=$(aws iot describe-endpoint --region $REGION | jq -r '.endpointAddress')
 IOT_ENDPOINT=$(aws iot describe-endpoint --region $REGION --endpoint-type iot:Data-ATS | jq -r '.endpointAddress')
 echo "export IOT_ENDPOINT_OLD=$IOT_ENDPOINT_OLD" >> /home/ec2-user/.bashrc
