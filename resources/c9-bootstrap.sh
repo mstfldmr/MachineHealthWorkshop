@@ -12,17 +12,24 @@ echo LC_ALL=en_US.UTF-8 >> /etc/environment
 . /home/ec2-user/.bashrc
 
 
-echo '=== INSTALL SOFTWARE ==='
+echo '=== Get repository ==='
+echo "$(date) === Get repository" >> /tmp/bootstrap.log
+
 cd /tmp
 git clone ${REPOSITORY}
 
 
+echo '=== Remove old software ==='
+echo "$(date) === Remove old software" >> /tmp/bootstrap.log
 
 yum -y remove aws-cli
 yum -y install sqlite telnet jq strace tree gcc glibc-static python27-pip
 
 PATH=$PATH:/usr/local/bin
 
+
+echo '=== Install Python 2.7 and some packages ==='
+echo "$(date) === Install Python 2.7 and some packages" >> /tmp/bootstrap.log
 
 # python27
 for l in boto3 awscli AWSIoTPythonSDK AWSIoTDeviceDefenderAgentSDK \
@@ -34,7 +41,9 @@ done
 pip install --upgrade python-daemon
 
 
-echo '=== Python 3.7 ==='
+echo '=== Install Python 3.7 and some packages ==='
+echo "$(date) === Install Python 3.7 and some packages" >> /tmp/bootstrap.log
+
 yum -y install gcc bzip2-devel ncurses-devel gdbm-devel xz-devel \
                sqlite-devel openssl-devel tk-devel uuid-devel \
                readline-devel zlib-devel libffi-devel
@@ -59,14 +68,18 @@ done
 /usr/local/bin/pip3 install --upgrade python-daemon
 
 
-echo '=== NodeJS ==='
+echo '=== Install NodeJS ==='
+echo "$(date) === Install NodeJS" >> /tmp/bootstrap.log
+
 rm -rf /home/ec2-user/.nvm
 curl -sL https://rpm.nodesource.com/setup_10.x | sudo bash -
 yum -y install nodejs
 ln -s /usr/bin/node /usr/bin/nodejs8.10
 
 
-echo '=== CONFIGURE awscli and setting ENVIRONMENT VARS ==='
+echo '=== Configure awscli and environment variables ==='
+echo "$(date) === Configure awscli and environment variables" >> /tmp/bootstrap.log
+
 echo "complete -C '/usr/local/bin/aws_completer' aws" >> /home/ec2-user/.bashrc
 #mkdir /home/ec2-user/CA
 mkdir /home/ec2-user/.aws
@@ -86,7 +99,8 @@ rm -f /home/ec2-user/banner.txt
 test ! -e /home/ec2-user/.ssh && mkdir -m 700 /home/ec2-user/.ssh
 
 
-echo '=== PREPARE FOR GREENGRASS ==='
+echo '=== Prepare for Greengrass ==='
+echo "$(date) === Get repository" >> /tmp/bootstrap.log
 
 if ! getent passwd ggc_user; then
     echo "adding ggc_user"
@@ -122,6 +136,7 @@ mount -a
 
 
 echo '=== Install Greengrass ==='
+echo "$(date) === Install Greengrass" >> /tmp/bootstrap.log
 
 cd /tmp/
 wget ${GG_LINK}
@@ -132,15 +147,17 @@ cp ggcredentials/config.json /greengrass/config/
 wget -O /greengrass/certs/root.ca.pem https://www.amazontrust.com/repository/AmazonRootCA1.pem
 
 
-echo '=== PREPARE Greengrass ML WORKSHOP ==='
+echo '=== Prepare Greengrass ML Workshop ==='
+echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 
 cd /tmp/
-
 test ! -d $INFERENCE_LAMBDA_DIR && mkdir -p $INFERENCE_LAMBDA_DIR
 tar -xzvf /tmp/MachineHealthWorkshop/lambdas/inference_lambda.tar.gz -C ${INFERENCE_LAMBDA_DIR}
 
 
-echo '=== PREPARE REBOOT in 1 minute with at ==='
+echo '=== Reboot in 1 minute ==='
+echo "$(date) === Reboot in 1 minute" >> /tmp/bootstrap.log
+
 FILE=$(mktemp)
 echo $FILE
 echo '#!/bin/bash' > $FILE
