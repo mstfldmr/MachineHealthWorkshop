@@ -5,7 +5,7 @@ REPOSITORY=https://github.com/mstfldmr/MachineHealthWorkshop
 GG_LINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.10.0/greengrass-linux-x86-64-1.10.0.tar.gz
 GG_FILE=greengrass-linux-x86-64-1.10.0.tar.gz
 GG_VER_CUR=1.10.0
-INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
+PREDICTION_LAMBDA_DIR=/home/ec2-user/environment/Inference
 
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
@@ -151,8 +151,8 @@ echo '=== Prepare Greengrass ML Workshop ==='
 echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 
 cd /tmp/
-test ! -d $INFERENCE_LAMBDA_DIR && mkdir -p $INFERENCE_LAMBDA_DIR
-tar -xzvf /tmp/MachineHealthWorkshop/lambdas/inference_lambda.tar.gz -C ${INFERENCE_LAMBDA_DIR}
+test ! -d $PREDICTION_LAMBDA_DIR && mkdir -p $PREDICTION_LAMBDA_DIR
+tar -xzvf /tmp/MachineHealthWorkshop/lambdas/prediction_lambda.tar.gz -C ${PREDICTION_LAMBDA_DIR}
 
 
 echo '=== Reboot in 1 minute ==='
