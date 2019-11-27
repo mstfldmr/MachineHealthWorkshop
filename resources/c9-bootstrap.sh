@@ -6,7 +6,6 @@ GG_LINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.10.0/g
 GG_FILE=greengrass-linux-x86-64-1.10.0.tar.gz
 GG_VER_CUR=1.10.0
 INFERENCE_LAMBDA_DIR=/home/ec2-user/environment/Inference
-GG_CREDENTIALS_FILE=ggcredentials.tar.gz #uploaded in c9_bootstrap_lambda.py Lambda function
 
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
@@ -127,7 +126,10 @@ echo '=== Install Greengrass ==='
 cd /tmp/
 wget ${GG_LINK}
 tar -xzvf ${GG_FILE} -C /
-tar -xzvf ${GG_CREDENTIALS_FILE} -C /greengrass
+cp ggcredentials/cert.pem /greengrass/certs/
+cp ggcredentials/private.key /greengrass/certs/
+cp ggcredentials/config.json /greengrass/config/
+wget -O /greengrass/certs/root.ca.pem https://www.amazontrust.com/repository/AmazonRootCA1.pem
 
 
 echo '=== PREPARE Greengrass ML WORKSHOP ==='
