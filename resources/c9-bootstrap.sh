@@ -27,8 +27,7 @@ PATH=$PATH:/usr/local/bin
 
 # python27
 for l in boto3 awscli AWSIoTPythonSDK AWSIoTDeviceDefenderAgentSDK \
-         greengrasssdk urllib3 geopy pyOpenSSL mxnet==1.2.1 \
-         scikit-image opencv-python pandas file-magic
+         greengrasssdk urllib3 geopy pyOpenSSL pandas
 do
   pip install $l
 done
@@ -53,8 +52,7 @@ ldconfig
 
 cd /tmp/
 for l in boto3 awscli AWSIoTPythonSDK AWSIoTDeviceDefenderAgentSDK \
-         greengrasssdk urllib3 geopy pyOpenSSL mxnet==1.2.1 \
-         scikit-image opencv-python pandas file-magic
+         greengrasssdk urllib3 geopy pyOpenSSL pandas
 do
   /usr/local/bin/pip3 install $l
 done
