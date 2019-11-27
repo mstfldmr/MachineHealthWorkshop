@@ -5,7 +5,7 @@ REPOSITORY=https://github.com/mstfldmr/MachineHealthWorkshop
 GG_LINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.10.0/greengrass-linux-x86-64-1.10.0.tar.gz
 GG_FILE=greengrass-linux-x86-64-1.10.0.tar.gz
 GG_VER_CUR=1.10.0
-PREDICTION_LAMBDA_DIR=/home/ec2-user/environment/Inference
+PREDICTION_LAMBDA_DIR=/home/ec2-user/environment/Prediction
 
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
