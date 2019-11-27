@@ -1,0 +1,838 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template for various IoT workshops. Creates a Cloud9
+  and SageMaker instance and bootstraps both instances.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: EC2 Instance Types
+      Parameters:
+      - 01C9InstanceType
+      - 02MLInstanceType
+    ParameterLabels:
+      01C9InstanceType:
+        default: 'EC2 Instance Type for Cloud9: '
+      02MLInstanceType:
+        default: 'EC2 Instance Type for Sagemaker: '
+Parameters:
+  01C9InstanceType:
+    Description: Cloud9 instance type
+    Type: String
+    Default: m4.large
+    AllowedValues:
+    - m4.large
+    - m4.xlarge
+    - t2.large
+    ConstraintDescription: Must be a valid Cloud9 instance type
+  02MLInstanceType:
+    Description: SageMaker instance type
+    Type: String
+    Default: ml.t2.medium
+    AllowedValues:
+    - ml.t2.large
+    - ml.t2.medium
+    - ml.m4.xlarge
+    ConstraintDescription: Must be a valid SageMaker instance type
+Mappings:
+  CONFIG:
+    C9-USER-DATA-SH:
+      VERSION: '20190502'
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 192.168.128.0/24
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+      - Key: CFN Stack
+        Value: !Ref AWS::StackName
+      - Key: Name
+        Value: !Join [" ", [!Ref 'AWS::StackName', "192.168.128.0/24"]]
+  PubSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Join ["", [!Ref 'AWS::Region', "a"]]
+      CidrBlock: 192.168.128.0/25
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: CFN Stack
+        Value: !Ref AWS::StackName
+      - Key: Name
+        Value: IoT workshop 192.168.128.0/25
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: CFN Stack
+        Value: !Ref AWS::StackName
+      - Key: Name
+        Value: IoT workshop
+  GatewayToInternet:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: GatewayToInternet
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: CFN Stack
+        Value: !Ref AWS::StackName
+      - Key: Name
+        Value: IoT workshop
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PubSubnetRTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnet
+      RouteTableId: !Ref PublicRouteTable
+  GGOtaS3UrlSignerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - iot.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Join ["-", ["GGOtaS3UrlSignerPolicy", !Ref 'AWS::Region']]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            Resource:
+            - arn:aws:s3:::eu-central-1-greengrass-updates/*
+            - arn:aws:s3:::eu-west-1-greengrass-updates/*
+            - arn:aws:s3:::us-east-1-greengrass-updates/*
+            - arn:aws:s3:::ap-northeast-1-greengrass-updates/*
+            - arn:aws:s3:::us-west-2-greengrass-updates/*
+            - arn:aws:s3:::ap-southeast-2-greengrass-updates/*
+      Path: "/"
+
+  IoTWSS3Bucket:
+    Type: AWS::S3::Bucket
+  IoTWSIoTPolicy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - iot:*
+          Resource:
+          - "*"
+  IoTWSRegLambdaJITRRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Join ["", ["IoTWSRegLambdaJITRPolicy-", !Ref 'AWS::Region']]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - iot:CreateThing
+            - iot:UpdateCertificate
+            - iot:CreatePolicy
+            - iot:AttachPolicy
+            - iot:DescribeCertificate
+            - iot:AttachThingPrincipal
+            Resource: "*"
+      Path: "/"
+  IoTWSIoTServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - iot.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration
+      - arn:aws:iam::aws:policy/service-role/AWSIoTLogging
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Path: "/"
+  IoTWSIAMUser:
+    Type: AWS::IAM::User
+
+  IoTWSC9Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Join ["", ["IoTWSC9Policy-", !Ref 'AWS::Region']]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - iot:*
+            - greengrass:*
+            - s3:*
+            - signer:*
+            - lambda:CreateFunction
+            - lambda:GetFunction
+            - lambda:ListFunctions
+            - lambda:DeleteFunction
+            - lambda:AddPermission
+            - lambda:GetPolicy
+            - lambda:UpdateFunctionCode
+            - logs:FilterLogEvents
+            - cloudformation:CreateChangeSet
+            - cloudformation:CreateStack
+            - cloudformation:DescribeChangeSet
+            - cloudformation:DescribeStackEvents
+            - cloudformation:DescribeStacks
+            - cloudformation:ExecuteChangeSet
+            - cloudformation:GetTemplateSummary
+            - cloudformation:ListStackResources
+            - cloudformation:UpdateStack
+            - iam:AttachRolePolicy
+            - iam:DetachRolePolicy
+            - iam:GetRole
+            - iam:GetUser
+            - iam:PassRole
+            - iam:CreateRole
+            - iam:DeleteRole
+            - iam:ListUsers
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Scan
+            - acm:ImportCertificate
+            - acm:ListCertificates
+            - acm:DescribeCertificate
+            - acm:DeleteCertificate
+            - acm:GetCertificate
+            Resource: "*"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      Path: "/"
+  IoTWSC9InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref IoTWSC9Role
+  IoTWSC9Instance:
+    Description: "-"
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      Description: AWS Cloud9 instance for IoT workshops
+      AutomaticStopTimeMinutes: 120
+      InstanceType: !Ref '01C9InstanceType'
+      Name: !Ref AWS::StackName
+      SubnetId: !Ref 'PubSubnet'
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: !Join ["", ["IoTWSLambdaBootstrapPolicy-", !Ref 'AWS::Region']]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - cloudformation:DescribeStacks
+            - cloudformation:DescribeStackEvents
+            - cloudformation:DescribeStackResource
+            - cloudformation:DescribeStackResources
+            - ec2:DescribeInstances
+            - ec2:AssociateIamInstanceProfile
+            - ec2:ModifyInstanceAttribute
+            - ec2:ReplaceIamInstanceProfileAssociation
+            - iam:ListInstanceProfiles
+            - iam:PassRole
+            - ssm:DescribeInstanceInformation
+            - ssm:SendCommand
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - s3:*
+            Resource:
+            - !GetAtt IoTWSS3Bucket.Arn
+            - !Join ["", [!GetAtt 'IoTWSS3Bucket.Arn', "/*"]]
+      - PolicyName: !Join ["", ["IoTWSLambdaGreengrassPolicy-", !Ref 'AWS::Region']]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - iot:*
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - greengrass:*
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - ec2:DescribeReservedInstancesOfferings
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - iam:CreateRole
+            - iam:AttachRolePolicy
+            - iam:GetRole
+            - iam:DeleteRole
+            - iam:PassRole
+            Resource: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/greengrass_cfn_", !Ref "AWS::StackName", "_ServiceRole"] ]
+  BootstrapC9InstanceLambda:
+    Description: Bootstrap Cloud9 instance
+    Type: Custom::BootstrapC9InstanceLambda
+    DependsOn:
+      - BootstrapC9InstanceLambdaFunction
+      - IoTWSS3Bucket
+      - IoTWSRegLambdaJITRRole
+      - IoTWSIoTServiceRole
+      - IoTWSIoTPolicy
+      - IoTWSC9Instance
+      - IoTWSC9InstanceProfile
+      - IoTWSC9SecurityGroup
+      - LambdaExecutionRole
+      - IoTThing
+    Properties:
+      ServiceToken: !GetAtt 'BootstrapC9InstanceLambdaFunction.Arn'
+      REGION: !Ref 'AWS::Region'
+      StackName: !Ref 'AWS::StackName'
+      EnvironmentId: !Ref 'IoTWSC9Instance'
+      LabIdeInstanceProfileName: !Ref 'IoTWSC9InstanceProfile'
+      LabIdeInstanceProfileArn: !GetAtt 'IoTWSC9InstanceProfile.Arn'
+      S3_BUCKET: !Ref 'IoTWSS3Bucket'
+      ARN_LAMBDA_ROLE: !GetAtt 'IoTWSRegLambdaJITRRole.Arn'
+      ARN_IOT_PROVISIONING_ROLE: !GetAtt 'IoTWSIoTServiceRole.Arn'
+      IOT_POLICY: !Ref 'IoTWSIoTPolicy'
+      SecurityGroupId: !Ref 'IoTWSC9SecurityGroup'
+  BootstrapC9InstanceLambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: IoTThing
+    Properties:
+      Environment:
+        Variables:
+          C9_USER_DATA_VERSION: !FindInMap [ CONFIG, C9-USER-DATA-SH, VERSION ]
+          IOT_CERTIFICATE_ID: !GetAtt IoTThing.certificateId
+          IOT_CERTIFICATE_PEM: !GetAtt IoTThing.certificatePem
+          IOT_PRIVATE_KEY: !GetAtt IoTThing.privateKey
+          IOT_ENDPOINT: !GetAtt IoTThing.iotEndpoint
+          THING_ARN: !Join
+                      - ":"
+                      - - "arn:aws:iot"
+                        - !Ref AWS::Region
+                        - !Ref AWS::AccountId
+                        - !Join
+                          - "/"
+                          - - "thing"
+                            - !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+          #"arn:aws:iot:${AWS::Region}:${AWS::AccountId}:thing/${CoreName}"
+          REGION: !Ref AWS::Region
+      Code:
+        S3Bucket: prototypinglabs-workshop-public #mustafa
+        S3Key: lambda/c9/bootstrap/c9_bootstrap_lambda17.zip
+      Handler: c9_bootstrap_lambda.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Runtime: python2.7
+      MemorySize: 256
+      Timeout: '600'
+  IoTWSC9SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable access to various ports
+      Tags:
+      - Key: Name
+        Value: C9 IoT workshop
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '8883'
+        ToPort: '8883'
+        CidrIp: 0.0.0.0/0
+
+  IoTWSSageMakerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable access to port 22
+      Tags:
+      - Key: Name
+        Value: SageMaker IoT workshop
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+  IoTWSSageMakerExecRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - sagemaker.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+      Policies:
+      - PolicyName: IoTWSSageMakerInlinePolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:*
+            - iam:GetRole
+            Resource: "*"
+  IoTWSSageMakerInstanceLifecycleConfig:
+    Type: AWS::SageMaker::NotebookInstanceLifecycleConfig
+    Properties:
+      OnCreate:
+      - Content:
+          Fn::Base64:
+            Fn::Join:
+            - ''
+            - - "#!/bin/bash -v\n"
+              - "date\n"
+              - "echo LANG=en_US.utf-8 >> /etc/environment\n"
+              - "echo LC_ALL=en_US.UTF-8 >> /etc/environment\n"
+              - "REGION="
+              - !Ref 'AWS::Region'
+              - "\n"
+              - "S3_BUCKET="
+              - !Ref 'IoTWSS3Bucket'
+              - "\n"
+              - "mkdir -p /home/ec2-user/SageMaker/MachineHealth\n"
+              - "cd /tmp/\n"
+              - "git clone https://github.com/mstfldmr/MachineHealthWorkshop\n"
+              - "mv MachineHealthWorkshop/notebooks/* /home/ec2-user/SageMaker/MachineHealth\n"
+              - "rm -rf MachineHealthWorkshop\n"
+              - "chown -R ec2-user:ec2-user /home/ec2-user/SageMaker/MachineHealth\n"
+              - "exit 0"
+  IoTWSSageMakerInstance:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      NotebookInstanceName: !Ref AWS::StackName
+      InstanceType: !Ref '02MLInstanceType'
+      SubnetId: !Ref PubSubnet
+      SecurityGroupIds:
+        - !Ref IoTWSSageMakerSecurityGroup
+      RoleArn: !GetAtt IoTWSSageMakerExecRole.Arn
+      LifecycleConfigName: !GetAtt IoTWSSageMakerInstanceLifecycleConfig.NotebookInstanceLifecycleConfigName
+      Tags:
+      - Key: Name
+        Value: IoT workshop
+      VolumeSizeInGB: 20
+
+  IoTThing:
+    # Resource creates thing, certificate key pair, and IoT policy
+    Type: Custom::IoTThing
+    Properties:
+      ServiceToken: !GetAtt CreateThingFunction.Arn
+      ThingName: !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+  CreateThingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Create thing, certificate, and policy, return cert and private key
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import sys
+          import cfnresponse
+          import boto3
+          from botocore.exceptions import ClientError
+          import json
+          import logging
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          policyDocument = {
+              'Version': '2012-10-17',
+              'Statement': [
+                  {
+                      'Effect': 'Allow',
+                      'Action': 'iot:*',
+                      'Resource': '*'
+                  },
+                  {
+                      'Effect': 'Allow',
+                      'Action': 'greengrass:*',
+                      'Resource': '*'
+                  }
+              ]
+          }
+
+
+          def handler(event, context):
+              responseData = {}
+              try:
+                  logger.info('Received event: {}'.format(json.dumps(event)))
+                  result = cfnresponse.FAILED
+                  client = boto3.client('iot')
+                  thingName=event['ResourceProperties']['ThingName']
+                  if event['RequestType'] == 'Create':
+                      thing = client.create_thing(
+                          thingName=thingName
+                      )
+                      response = client.create_keys_and_certificate(
+                          setAsActive=True
+                      )
+                      certId = response['certificateId']
+                      certArn = response['certificateArn']
+                      certPem = response['certificatePem']
+                      privateKey = response['keyPair']['PrivateKey']
+                      client.create_policy(
+                          policyName='{}-full-access'.format(thingName),
+                          policyDocument=json.dumps(policyDocument)
+                      )
+                      response = client.attach_policy(
+                          policyName='{}-full-access'.format(thingName),
+                          target=certArn
+                      )
+                      response = client.attach_thing_principal(
+                          thingName=thingName,
+                          principal=certArn,
+                      )
+                      logger.info('Created thing: %s, cert: %s and policy: %s' %
+                          (thingName, certId, '{}-full-access'.format(thingName)))
+                      result = cfnresponse.SUCCESS
+                      responseData['certificateId'] = certId
+                      responseData['certificatePem'] = certPem
+                      responseData['privateKey'] = privateKey
+                      responseData['iotEndpoint'] = client.describe_endpoint(endpointType='iot:Data-ATS')['endpointAddress']
+                  elif event['RequestType'] == 'Update':
+                      logger.info('Updating thing: %s' % thingName)
+                      result = cfnresponse.SUCCESS
+                  elif event['RequestType'] == 'Delete':
+                      logger.info('Deleting thing: %s and cert/policy' % thingName)
+                      response = client.list_thing_principals(
+                          thingName=thingName
+                      )
+                      for i in response['principals']:
+                          response = client.detach_thing_principal(
+                              thingName=thingName,
+                              principal=i
+                          )
+                          response = client.detach_policy(
+                              policyName='{}-full-access'.format(thingName),
+                              target=i
+                          )
+                          response = client.update_certificate(
+                              certificateId=i.split('/')[-1],
+                              newStatus='INACTIVE'
+                          )
+                          response = client.delete_certificate(
+                              certificateId=i.split('/')[-1],
+                              forceDelete=True
+                          )
+                          response = client.delete_policy(
+                              policyName='{}-full-access'.format(thingName),
+                          )
+                          response = client.delete_thing(
+                              thingName=thingName
+                          )
+                      result = cfnresponse.SUCCESS
+              except ClientError as e:
+                  logger.error('Error: {}'.format(e))
+                  result = cfnresponse.FAILED
+              logger.info('Returning response of: {}, with result of: {}'.format(result, responseData))
+              sys.stdout.flush()
+              cfnresponse.send(event, context, result, responseData)
+  GreengrassResourceRole:
+    # Role for deployed Lambda functions to a Greengrass core to call other
+    # AWS services directly
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: greengrass.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: IoTWSGreengrassServiceRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - iot:*
+            Resource: "*"
+
+  GreengrassGroup:
+    Type: AWS::Greengrass::Group
+    Properties:
+      Name: !Join ["_", ["Group", !Ref 'AWS::StackName'] ]
+      RoleArn: !GetAtt GreengrassResourceRole.Arn
+      InitialVersion:
+        CoreDefinitionVersionArn: !Ref GreengrassCoreDefinitionVersion
+        #FunctionDefinitionVersionArn: !GetAtt FunctionDefinition.LatestVersionArn
+        #SubscriptionDefinitionVersionArn: !GetAtt SubscriptionDefinition.LatestVersionArn
+        # DeviceDefinitionVersionArn: !Ref ExampleDeviceDefinitionVersion
+        # LoggerDefinitionVersionArn: !Ref ExampleLoggerDefinitionVersion
+        # ResourceDefinitionVersionArn: !Ref ExampleResourceDefinitionVersion
+        # ConnectorDefinitionVersionArn: !Ref ExampleConnectorDefinitionVersion
+  GreengrassCoreDefinition:
+    Type: AWS::Greengrass::CoreDefinition
+    Properties:
+      # use CoreName + "_Core" as "thingName"
+      Name: !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+  GreengrassCoreDefinitionVersion:
+    Type: AWS::Greengrass::CoreDefinitionVersion
+    Properties:
+      CoreDefinitionId: !Ref GreengrassCoreDefinition
+      Cores:
+        - Id: !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+          ThingArn: !Join
+                      - ":"
+                      - - "arn:aws:iot"
+                        - !Ref AWS::Region
+                        - !Ref AWS::AccountId
+                        - !Join
+                          - "/"
+                          - - "thing"
+                            - !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+          CertificateArn: !Join
+                            - ":"
+                            - - "arn:aws:iot"
+                              - !Ref AWS::Region
+                              - !Ref AWS::AccountId
+                              - !Join
+                                - "/"
+                                - - "cert"
+                                  - !GetAtt IoTThing.certificateId
+          SyncShadow: "false"
+
+  GroupDeploymentReset:
+    # Allows for deletion of Greengrass group if the deployment status is not
+    # reset manually via the console or API
+    Type: Custom::GroupDeploymentReset
+    DependsOn: GreengrassGroup
+    Properties:
+      ServiceToken: !GetAtt GroupDeploymentResetFunction.Arn
+      Region: !Ref 'AWS::Region'
+      ThingName: !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
+  GroupDeploymentResetFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Resets any deployments during stack delete and manages Greengrass service role needs
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          STACK_NAME: !Ref 'AWS::StackName'
+      Code:
+        ZipFile: |
+          import os
+          import sys
+          import json
+          import logging
+          import cfnresponse
+          import boto3
+          from botocore.exceptions import ClientError
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          c = boto3.client('greengrass')
+          iam = boto3.client('iam')
+          role_name = 'greengrass_cfn_{}_ServiceRole'.format(os.environ['STACK_NAME'])
+
+          def find_group(thingName):
+              response_auth = ''
+
+              response = c.list_groups()
+              for group in response['Groups']:
+                  thingfound = False
+                  group_version = c.get_group_version(
+                      GroupId=group['Id'],
+                      GroupVersionId=group['LatestVersion']
+                  )
+
+                  core_arn = group_version['Definition'].get('CoreDefinitionVersionArn', '')
+                  if core_arn:
+                      core_id = core_arn[core_arn.index('/cores/')+7:core_arn.index('/versions/')]
+                      core_version_id = core_arn[core_arn.index('/versions/')+10:len(core_arn)]
+                      thingfound = False
+                      response_core_version = c.get_core_definition_version(
+                          CoreDefinitionId=core_id,
+                          CoreDefinitionVersionId=core_version_id
+                      )
+                      if 'Cores' in response_core_version['Definition']:
+                          for thing_arn in response_core_version['Definition']['Cores']:
+                              if thingName == thing_arn['ThingArn'].split('/')[1]:
+                                  thingfound = True
+                                  break
+                  if(thingfound):
+                      logger.info('found thing: %s, group id is: %s' % (thingName, group['Id']))
+                      response_auth = group['Id']
+                      return(response_auth)
+
+
+          def manage_greengrass_role(cmd):
+              if cmd == 'CREATE':
+                  r = iam.create_role(
+                      RoleName=role_name,
+                      AssumeRolePolicyDocument='{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Principal": {"Service": "greengrass.amazonaws.com"},"Action": "sts:AssumeRole"}]}',
+                      Description='Role for CloudFormation blog post',
+                  )
+                  role_arn = r['Role']['Arn']
+                  iam.attach_role_policy(
+                      RoleName=role_name,
+                      PolicyArn='arn:aws:iam::aws:policy/service-role/AWSGreengrassResourceAccessRolePolicy'
+                  )
+                  c.associate_service_role_to_account(RoleArn=role_arn)
+                  logger.info('Created and associated role {}'.format(role_name))
+              else:
+                  try:
+                      r = iam.get_role(RoleName=role_name)
+                      role_arn = r['Role']['Arn']
+                      c.disassociate_service_role_from_account()
+                      iam.delete_role(RoleName=role_name)
+                      logger.info('Disassociated and deleted role {}'.format(role_name))
+                  except ClientError:
+                      return
+
+
+          def handler(event, context):
+              responseData = {}
+              try:
+                  logger.info('Received event: {}'.format(json.dumps(event)))
+                  result = cfnresponse.FAILED
+                  thingName=event['ResourceProperties']['ThingName']
+                  if event['RequestType'] == 'Create':
+                      try:
+                          c.get_service_role_for_account()
+                          result = cfnresponse.SUCCESS
+                      except ClientError as e:
+                          manage_greengrass_role('CREATE')
+                          logger.info('Greengrass service role created')
+                          result = cfnresponse.SUCCESS
+                  elif event['RequestType'] == 'Delete':
+                      group_id = find_group(thingName)
+                      logger.info('Group id to delete: %s' % group_id)
+                      if group_id:
+                          c.reset_deployments(
+                              Force=True,
+                              GroupId=group_id
+                          )
+                          result = cfnresponse.SUCCESS
+                          logger.info('Forced reset of Greengrass deployment')
+                          manage_greengrass_role('DELETE')
+                      else:
+                          logger.error('No group Id for thing: %s found' % thingName)
+              except ClientError as e:
+                  logger.error('Error: %s' % e)
+                  result = cfnresponse.FAILED
+              logger.info('Returning response of: %s, with result of: %s' % (result, responseData))
+              sys.stdout.flush()
+              cfnresponse.send(event, context, result, responseData)
+
+Outputs:
+  SageMakerInstance:
+    Value:
+      Fn::Join:
+      - ''
+      - - https://
+        - !Ref 'AWS::Region'
+        - ".console.aws.amazon.com/sagemaker/home?region="
+        - !Ref 'AWS::Region'
+        - "#/notebook-instances/openNotebook/"
+        - !GetAtt IoTWSSageMakerInstance.NotebookInstanceName
+  Cloud9IDE:
+    Value:
+      Fn::Join:
+      - ''
+      - - https://
+        - !Ref 'AWS::Region'
+        - ".console.aws.amazon.com/cloud9/ide/"
+        - !Ref 'IoTWSC9Instance'
+        - "?region="
+        - !Ref 'AWS::Region'
+  S3Bucket:
+    Description: Name of the S3 Bucket for the IoT workshop
+    Value:
+      Ref: IoTWSS3Bucket
