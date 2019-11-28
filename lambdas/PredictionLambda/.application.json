@@ -1,0 +1,12 @@
+{
+    "ApplicationName": "Inference",
+    "DeploymentMethod": "cloudformation",
+    "Functions": {
+        "GGMLInference": {
+            "PhysicalId": {
+                "us-east-1": "cloud9-Inference"
+            }
+        }
+    },
+    "StackName": "cloud9-Inference"
+}

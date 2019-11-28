@@ -1,11 +1,12 @@
 #!/bin/bash -v
 date
+echo "$(date) === Start Cloud9 Bootstrapping" >> /tmp/bootstrap.log
 
 REPOSITORY=https://github.com/mstfldmr/MachineHealthWorkshop
 GG_LINK=https://d1onfpft10uf5o.cloudfront.net/greengrass-core/downloads/1.10.0/greengrass-linux-x86-64-1.10.0.tar.gz
 GG_FILE=greengrass-linux-x86-64-1.10.0.tar.gz
 GG_VER_CUR=1.10.0
-PREDICTION_LAMBDA_DIR=/home/ec2-user/environment/Prediction
+
 
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
@@ -151,8 +152,8 @@ echo '=== Prepare Greengrass ML Workshop ==='
 echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 
 cd /tmp/
-test ! -d $PREDICTION_LAMBDA_DIR && mkdir -p $PREDICTION_LAMBDA_DIR
-tar -xzvf /tmp/MachineHealthWorkshop/lambdas/prediction_lambda.tar.gz -C ${PREDICTION_LAMBDA_DIR}
+cp -R MachineHealthWorkshop/lambdas/PredictionLambda/ /home/ec2-user/environment/
+chown -R ec2-user:ec2-user /home/ec2-user/environment/PredictionLambda
 
 
 echo '=== Reboot in 1 minute ==='
