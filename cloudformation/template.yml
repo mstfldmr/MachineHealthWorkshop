@@ -648,12 +648,12 @@ Resources:
       RoleArn: !GetAtt GreengrassResourceRole.Arn
       InitialVersion:
         CoreDefinitionVersionArn: !Ref GreengrassCoreDefinitionVersion
+        LoggerDefinitionVersionArn: !Ref GreengrassLoggerDefinitionVersion
         #FunctionDefinitionVersionArn: !GetAtt FunctionDefinition.LatestVersionArn
         #SubscriptionDefinitionVersionArn: !GetAtt SubscriptionDefinition.LatestVersionArn
-        # DeviceDefinitionVersionArn: !Ref ExampleDeviceDefinitionVersion
-        # LoggerDefinitionVersionArn: !Ref ExampleLoggerDefinitionVersion
-        # ResourceDefinitionVersionArn: !Ref ExampleResourceDefinitionVersion
-        # ConnectorDefinitionVersionArn: !Ref ExampleConnectorDefinitionVersion
+        #DeviceDefinitionVersionArn: !Ref ExampleDeviceDefinitionVersion
+        #ResourceDefinitionVersionArn: !Ref ExampleResourceDefinitionVersion
+        #ConnectorDefinitionVersionArn: !Ref ExampleConnectorDefinitionVersion
   GreengrassCoreDefinition:
     Type: AWS::Greengrass::CoreDefinition
     Properties:
@@ -684,6 +684,36 @@ Resources:
                                 - - "cert"
                                   - !GetAtt IoTThing.certificateId
           SyncShadow: "false"
+
+
+  GreengrassLoggerDefinition:
+    Type: AWS::Greengrass::LoggerDefinition
+    Properties:
+      Name: WorkshopLoggerDefinition
+  GreengrassLoggerDefinitionVersion:
+    Type: AWS::Greengrass::LoggerDefinitionVersion
+    Properties:
+      LoggerDefinitionId: !Ref GreengrassLoggerDefinition
+      Loggers:
+        - Id: GGLogger1
+          Type: FileSystem
+          Component: GreengrassSystem
+          Level: INFO
+          Space: '25000'
+        - Id: GGLogger2
+          Type: FileSystem
+          Component: Lambda
+          Level: INFO
+          Space: '25000'
+        - Id: GGLogger3
+          Type: AWSCloudWatch
+          Component: GreengrassSystem
+          Level: INFO
+        - Id: GGLogger4
+          Type: AWSCloudWatch
+          Component: Lambda
+          Level: INFO
+
 
   GroupDeploymentReset:
     # Allows for deletion of Greengrass group if the deployment status is not
@@ -811,8 +841,79 @@ Resources:
               sys.stdout.flush()
               cfnresponse.send(event, context, result, responseData)
 
+
+  FirehoseDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      S3DestinationConfiguration:
+        BucketARN: !GetAtt IoTWSS3Bucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 300
+          SizeInMBs: 128
+        CloudWatchLoggingOptions:
+          Enabled: True
+          LogGroupName: !Ref FirehoseLogGroup
+          LogStreamName: !Ref FirehoseLogStream
+        CompressionFormat: UNCOMPRESSED
+        ErrorOutputPrefix: error/
+        Prefix: data/
+        RoleARN: !GetAtt DeliveryRole.Arn
+
+  DeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref 'AWS::AccountId'
+  DeliveryPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: firehose_delivery_policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:AbortMultipartUpload'
+              - 's3:GetBucketLocation'
+              - 's3:GetObject'
+              - 's3:ListBucket'
+              - 's3:ListBucketMultipartUploads'
+              - 's3:PutObject'
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref IoTWSS3Bucket
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref IoTWSS3Bucket
+                  - '*'
+      Roles:
+        - !Ref DeliveryRole
+
+  FirehoseLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+  FirehoseLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref FirehoseLogGroup
+
 Outputs:
-  SageMakerInstance:
+  SageMakerNotebook:
+    Description: Link of the Sagemaker Notebook
     Value:
       Fn::Join:
       - ''
@@ -823,6 +924,7 @@ Outputs:
         - "#/notebook-instances/openNotebook/"
         - !GetAtt IoTWSSageMakerInstance.NotebookInstanceName
   Cloud9IDE:
+    Description: Link of the Cloud9 IDE
     Value:
       Fn::Join:
       - ''
