@@ -155,6 +155,8 @@ echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 cd /tmp/
 cp -R MachineHealthWorkshop/lambdas/PredictionLambda/ /home/ec2-user/environment/
 chown -R ec2-user:ec2-user /home/ec2-user/environment/PredictionLambda
+cp -R MachineHealthWorkshop/lambdas/OPCUALambda/ /home/ec2-user/environment/
+chown -R ec2-user:ec2-user /home/ec2-user/environment/OPCUALambda
 
 
 echo '=== Reboot in 1 minute ==='
