@@ -1,12 +1,12 @@
 {
-    "ApplicationName": "Inference",
+    "ApplicationName": "PredictionLambda",
     "DeploymentMethod": "cloudformation",
     "Functions": {
-        "GGMLInference": {
+        "PredictionLambda": {
             "PhysicalId": {
-                "us-east-1": "cloud9-Inference"
+                "us-east-1": "cloud9-PredictionLambda"
             }
         }
     },
-    "StackName": "cloud9-Inference"
+    "StackName": "cloud9-PredictionLambda"
 }
