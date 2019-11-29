@@ -8,6 +8,9 @@ GG_FILE=greengrass-linux-x86-64-1.10.0.tar.gz
 GG_VER_CUR=1.10.0
 
 
+export PATH=$PATH:/usr/local/bin
+echo 'export PATH=$PATH:/usr/local/bin' >> /root/.bashrc
+
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.UTF-8 >> /etc/environment
 . /home/ec2-user/.bashrc
@@ -25,8 +28,6 @@ echo "$(date) === Remove old software" >> /tmp/bootstrap.log
 
 yum -y remove aws-cli
 yum -y install sqlite telnet jq strace tree gcc glibc-static python27-pip
-
-PATH=$PATH:/usr/local/bin
 
 
 echo '=== Install Python 2.7 and some packages ==='
@@ -60,6 +61,7 @@ echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf
 ldconfig
 
 cd /tmp/
+/usr/local/bin/pip3 install --upgrade pip
 for l in boto3 awscli AWSIoTPythonSDK AWSIoTDeviceDefenderAgentSDK \
          greengrasssdk urllib3 geopy pyOpenSSL pandas
 do
@@ -93,8 +95,7 @@ IOT_ENDPOINT_OLD=$(aws iot describe-endpoint --region $REGION | jq -r '.endpoint
 IOT_ENDPOINT=$(aws iot describe-endpoint --region $REGION --endpoint-type iot:Data-ATS | jq -r '.endpointAddress')
 echo "export IOT_ENDPOINT_OLD=$IOT_ENDPOINT_OLD" >> /home/ec2-user/.bashrc
 echo "export IOT_ENDPOINT=$IOT_ENDPOINT" >> /home/ec2-user/.bashrc
-echo 'PATH=$PATH:/usr/local/bin' >> /home/ec2-user/.bashrc
-echo 'export PATH' >> /home/ec2-user/.bashrc
+echo 'export PATH=$PATH:/usr/local/bin' >> /home/ec2-user/.bashrc
 cat /home/ec2-user/banner.txt >> /home/ec2-user/.bashrc
 rm -f /home/ec2-user/banner.txt
 test ! -e /home/ec2-user/.ssh && mkdir -m 700 /home/ec2-user/.ssh
@@ -153,6 +154,10 @@ echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 
 cd /tmp/
 cp -R MachineHealthWorkshop/lambdas/PredictionLambda/ /home/ec2-user/environment/
+
+XXXS3BUCKETXXX
+XXXTRAININGJOBXXX
+
 chown -R ec2-user:ec2-user /home/ec2-user/environment/PredictionLambda
 
 

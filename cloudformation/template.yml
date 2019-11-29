@@ -474,10 +474,14 @@ Resources:
               - "S3_BUCKET="
               - !Ref 'IoTWSS3Bucket'
               - "\n"
+              - "TRAININGJOB="
+              - !Join ["_", ["TrainingJob", !Ref 'AWS::StackName'] ]
+              - "\n"
               - "mkdir -p /home/ec2-user/SageMaker/MachineHealth\n"
               - "cd /tmp/\n"
               - "git clone https://github.com/mstfldmr/MachineHealthWorkshop\n"
-              - "mv MachineHealthWorkshop/notebooks/* /home/ec2-user/SageMaker/MachineHealth\n"
+              - "cp -R MachineHealthWorkshop/notebooks/* /home/ec2-user/SageMaker/MachineHealth/\n"
+              - "sed -e \"s/XXXS3BUCKETXXX/$S3_BUCKET/\" -e \"s/XXXTRAININGJOBXXX/$TRAININGJOB/\" MachineHealthWorkshop/notebooks/MachineHealth.ipynb > /home/ec2-user/SageMaker/MachineHealth/MachineHealth.ipynb\n"
               - "rm -rf MachineHealthWorkshop\n"
               - "chown -R ec2-user:ec2-user /home/ec2-user/SageMaker/MachineHealth\n"
               - "exit 0"
