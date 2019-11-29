@@ -154,10 +154,6 @@ echo "$(date) === Prepare Greengrass ML Workshop" >> /tmp/bootstrap.log
 
 cd /tmp/
 cp -R MachineHealthWorkshop/lambdas/PredictionLambda/ /home/ec2-user/environment/
-
-XXXS3BUCKETXXX
-XXXTRAININGJOBXXX
-
 chown -R ec2-user:ec2-user /home/ec2-user/environment/PredictionLambda
 
 
