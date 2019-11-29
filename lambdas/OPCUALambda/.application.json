@@ -1,0 +1,12 @@
+{
+    "ApplicationName": "OPCUALambda",
+    "DeploymentMethod": "cloudformation",
+    "Functions": {
+        "PredictionLambda": {
+            "PhysicalId": {
+                "us-east-1": "cloud9-OPCUALambda"
+            }
+        }
+    },
+    "StackName": "cloud9-OPCUALambda"
+}
