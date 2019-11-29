@@ -387,7 +387,7 @@ Resources:
           REGION: !Ref AWS::Region
       Code:
         S3Bucket: prototypinglabs-workshop-public #mustafa
-        S3Key: lambda/c9/bootstrap/c9_bootstrap_lambda17.zip
+        S3Key: lambda/c9/bootstrap/c9_bootstrap_lambda18.zip
       Handler: c9_bootstrap_lambda.lambda_handler
       Role:
         Fn::GetAtt:
@@ -475,7 +475,7 @@ Resources:
               - !Ref 'IoTWSS3Bucket'
               - "\n"
               - "TRAININGJOB="
-              - !Join ["_", ["TrainingJob", !Ref 'AWS::StackName'] ]
+              - !Join ["-", ["TrainingJob", !Ref 'AWS::StackName'] ]
               - "\n"
               - "mkdir -p /home/ec2-user/SageMaker/MachineHealth\n"
               - "cd /tmp/\n"
@@ -940,5 +940,7 @@ Outputs:
         - !Ref 'AWS::Region'
   S3Bucket:
     Description: Name of the S3 Bucket for the IoT workshop
-    Value:
-      Ref: IoTWSS3Bucket
+    Value: !Ref IoTWSS3Bucket
+  FirehoseArn:
+    Description: ARN of the Firehose Delivery Stream
+    Value: !GetAtt FirehoseDeliveryStream.Arn
