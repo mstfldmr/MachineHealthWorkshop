@@ -137,7 +137,7 @@ async function main() {
 main();
 
 
-exports.handler = async (event) => {
+exports.lambda_handler = async (event) => {
   const response = {
     statusCode: 200,
     body: JSON.stringify('Not implemented'),
