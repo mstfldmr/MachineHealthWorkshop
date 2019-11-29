@@ -113,7 +113,7 @@ async function main() {
         timestamp: Date.now()
       };
 
-      var topic = serverName + '/' + nodeId;
+      var topic = 'predict';
       // Publishing a message on the given `topic`.
       publish(topic, payload);
 
