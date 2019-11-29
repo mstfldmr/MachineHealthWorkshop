@@ -385,9 +385,13 @@ Resources:
                             - !Join ["_", ["Group", !Ref 'AWS::StackName', "Core"] ]
           #"arn:aws:iot:${AWS::Region}:${AWS::AccountId}:thing/${CoreName}"
           REGION: !Ref AWS::Region
+          #TODO
+          BOOTSTRAP_SCRIPT_URL: https://raw.githubusercontent.com/mstfldmr/MachineHealthWorkshop/master/resources/c9-bootstrap.sh
+          TRAINED_MODEL_URL: s3://prototypinglabs-workshop-public/model/model.tar.gz
       Code:
-        S3Bucket: prototypinglabs-workshop-public #mustafa
-        S3Key: lambda/c9/bootstrap/c9_bootstrap_lambda18.zip
+        #TODO
+        S3Bucket: prototypinglabs-workshop-public
+        S3Key: lambda/c9/bootstrap/c9_bootstrap_lambda19.zip
       Handler: c9_bootstrap_lambda.lambda_handler
       Role:
         Fn::GetAtt:
