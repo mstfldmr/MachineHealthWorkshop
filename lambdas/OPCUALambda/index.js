@@ -8,9 +8,10 @@ const iot = new Greengrass.IotData();
 
 
 const serverName = 'MyServer';
-const endpointUrl = 'opc.tcp://localhost:55389';
-const nodeId = "ns=1;s=MyPlant";
+const endpointUrl = 'opc.tcp://localhost:4334/UA/Turbofan';
+const nodeId = "ns=1;i=1002";
 
+let dataQueue = { "input": [[]]};
 var subscription;
 
 
@@ -89,8 +90,6 @@ async function main() {
       .on("terminated", () => console.log("subscription terminated"));
 
 
-
-
     var monitoredItem = opcua.ClientMonitoredItem.create(subscription, {
         nodeId: opcua.resolveNodeId(nodeId),
         attributeId: opcua.AttributeIds.Value
@@ -105,17 +104,28 @@ async function main() {
       console.log(`received => ${dataValue.value.value}`);
       console.log(`received => ${dataValue}`);
 
-      const payload = {
-        plant: serverName,
-        nodeId: nodeId,
-        //nodeName: nodeName,
-        value: dataValue.value.value,
-        timestamp: Date.now()
-      };
 
-      var topic = 'predict';
-      // Publishing a message on the given `topic`.
-      publish(topic, payload);
+      dataQueue['input'][0].push(dataValue.value.value.split(','));
+
+      //queue full, send message
+      if(dataQueue['input'][0].length >= 10){
+        console.log("Queue: ", dataQueue)
+
+        const payload = {
+          plant: serverName,
+          nodeId: nodeId,
+          //nodeName: nodeName,
+          value: dataQueue,
+          timestamp: Date.now()
+        };
+
+        var topic = 'predict';
+        // Publishing a message on the given `topic`.
+        publish(topic, payload);
+
+        //clear the queue
+        dataQueue['input'][0].length = 0
+    }
 
       // publish a message to the local Firehose Connector
       const req_id = uuidv1();
