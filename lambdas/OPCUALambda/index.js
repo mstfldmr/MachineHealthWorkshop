@@ -115,7 +115,7 @@ async function main() {
           plant: serverName,
           nodeId: nodeId,
           //nodeName: nodeName,
-          value: dataQueue,
+          readings: dataQueue['input'],
           timestamp: Date.now()
         };
 
