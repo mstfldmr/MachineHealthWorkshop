@@ -365,7 +365,9 @@ Resources:
       SecurityGroupId: !Ref 'IoTWSC9SecurityGroup'
   BootstrapC9InstanceLambdaFunction:
     Type: AWS::Lambda::Function
-    DependsOn: IoTThing
+    DependsOn:
+      - IoTThing
+      - IoTWSS3Bucket
     Properties:
       Environment:
         Variables:
@@ -634,7 +636,7 @@ Resources:
             Service: greengrass.amazonaws.com
           Action: sts:AssumeRole
       Policies:
-      - PolicyName: IoTWSGreengrassServiceRole
+      - PolicyName: IoTWSGreengrassServicePolicy
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -648,6 +650,11 @@ Resources:
             Action:
             - iot:*
             Resource: "*"
+          - Effect: Allow
+            Action:
+            - firehose:PutRecord
+            - firehose:PutRecordBatch
+            Resource: !GetAtt FirehoseDeliveryStream.Arm
 
   GreengrassGroup:
     Type: AWS::Greengrass::Group
