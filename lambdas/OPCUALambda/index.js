@@ -28,6 +28,7 @@ const firehose_publish = (id, object) => {
     },
     "id": id
   };
+  console.log('sending message to firehose connector')
   return new Promise((resolve, reject) => {
     iot.publish({
         topic: firehose_topic,
@@ -116,7 +117,7 @@ async function main() {
           nodeId: nodeId,
           //nodeName: nodeName,
           readings: dataQueue['input'],
-          timestamp: Date.now()
+          timestamp: Date.now() //TODO: each data reading should have a separate timestamp
         };
 
         var topic = 'predict';
@@ -128,6 +129,13 @@ async function main() {
     }
 
       // publish a message to the local Firehose Connector
+      const payload = {
+        plant: serverName,
+        nodeId: nodeId,
+        //nodeName: nodeName,
+        reading: dataValue.value.value,
+        timestamp: Date.now()
+      };
       const req_id = uuidv1();
       firehose_publish(req_id, payload);
     });
