@@ -30,6 +30,7 @@ Completing this workshop requires an AWS account. It is highly recommended that 
 
 - Go to https://console.aws.amazon.com
 - Login with your credentials
+- Go to N. Virginia (us-east-1) region using the dropdown box at the upper right of the page
 
 
 ### Launch AWS CloudFormation
@@ -55,7 +56,7 @@ This step will launch the required resources.
 
 Wait 6-7 min until the resources are launched. Then,
 - Go to 'Outputs' tab
-- Note 'FirehoseArn' for later use
+- Note 'FirehoseArn' and 'S3Bucket' for later use
 - Click 'Cloud9IDE' link
 
 
@@ -108,7 +109,7 @@ If you later update the Lambda functions, you will need to:
 - Click 'Alias: DevelopmentAlias'
 - Click 'Aliases'
 - Click 'DevelopmentAlias'
-- Change version
+- Change version to the new version number
 - Click 'Save'
 
 
@@ -174,6 +175,19 @@ In this step, you will add Lambda functions, subscriptions, connector and ML res
   - Click 'Finish'
 
 
+- Click 'Resources'
+- Click 'Machine Learning'
+- Click 'Add a machine learning resource'
+- Resource name: 'lstmmodel'
+- Model source: 'Upload a model in S3'
+- Select 'workshop-iotwss3bucket-...', the bucket you created earlier
+- Select 'model/model.tar.gz'
+- Local path: '/trained_models'
+- Lambda function affiliations: 'cloud9-PredictionLambda-...'
+- Select 'Read-only access'
+- Click 'Save'
+
+
 - Click 'Actions'
 - Click 'Deploy'
 - Click 'Automatic detection'
@@ -188,4 +202,43 @@ You can see the deployed Lambda functions in Greengrass in `/greengrass/ggc/depl
 You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 
 
-###
+### See Greengrass logs
+
+- Go to Cloud9
+- Type in the 'terminal' tab (you can use TAB button to autocomplete your account number):
+ - `sudo su`
+ - `tail -f /greengrass/ggc/var/log/user/us-east-1/YOUR-ACCOUNT-NUMBER/cloud9-OPCUALambda-....log`
+ - `CTRL + C`
+ - `tail -f /greengrass/ggc/var/log/user/us-east-1/YOUR-ACCOUNT-NUMBER/cloud9-PredictionLambda-....log`
+
+
+### See messages coming to IoT Cloud
+
+- Go to https://console.aws.amazon.com/iot/home?region=us-east-1#/test
+- Subscription topic: '#'
+- Click 'Subscribe'
+
+
+### Monitor messages coming to Firehose
+
+- Go to https://console.aws.amazon.com/firehose
+- Click 'workshop-FirehoseDeliveryStream-...'
+- Click 'Monitoring'
+
+
+### Check data stored in S3
+
+- Go to https://console.aws.amazon.com/s3
+- Click 'workshop-iotwss3bucket-...'
+
+
+### Train a new model
+
+- Go to https://console.aws.amazon.com/cloudformation/
+- Click 'machinehealth' on the left column
+- Click 'Outputs' tab
+- Click 'SageMakerNotebook' link
+- Click 'MachineHealth'
+- Click 'MachineHealth.ipynb'
+- Click 'Kernel'
+- Click 'Restart and Run All'

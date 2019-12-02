@@ -58,21 +58,23 @@ net = TimeSeriesNetInfer(net_params['num_layers'], net_params['num_units'], net_
 net.load_parameters(os.path.join(model_dir, "net.params"), ctx)
 
 
-
 def lambda_handler(event, context):
-    print("event: {}".format(event))
-
     try:
-        input_data = input_data.as_in_context(ctx)
-        prediction = net(event['readings'])
+        readings = event['readings']
+        print("event: {}".format(readings))
+        readings = nd.array(readings)
+        input = readings.as_in_context(ctx)
+        prediction = net(input)[0]
 
         client.publish(
             topic='prediction',
             queueFullPolicy='AllOrException',
             payload='Prediction: {} Message received: {}'
-                .format(prediction, event['readings']))
+                .format(prediction, readings))
+
+        return {"status": "success", "prediction": prediction}
+
 
     except Exception as e:
         logger.error('Failed to publish message: ' + repr(e))
-
-    return {"prediction": prediction}
+        return {"status": "fail"}
