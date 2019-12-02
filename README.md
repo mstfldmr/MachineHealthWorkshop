@@ -230,6 +230,7 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 
 - Go to https://console.aws.amazon.com/s3
 - Click 'workshop-iotwss3bucket-...'
+- Click ''
 
 
 ### Train a new model
@@ -242,3 +243,5 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 - Click 'MachineHealth.ipynb'
 - Click 'Kernel'
 - Click 'Restart and Run All'
+
+This notebook trains a model with the provided algorithm based on the original Turbofan Engine Degradation Simulation Data Set. In order to trained a model based on the collected data, the data must be labelled.

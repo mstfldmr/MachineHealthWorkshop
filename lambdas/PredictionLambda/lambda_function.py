@@ -61,20 +61,14 @@ net.load_parameters(os.path.join(model_dir, "net.params"), ctx)
 def lambda_handler(event, context):
     try:
         readings = event['readings']
-        print("event: {}".format(readings))
+        print("readings: {}".format(readings))
         readings = nd.array(readings)
         input = readings.as_in_context(ctx)
-        prediction = net(input)[0]
-
-        client.publish(
-            topic='prediction',
-            queueFullPolicy='AllOrException',
-            payload='Prediction: {} Message received: {}'
-                .format(prediction, readings))
-
-        return {"status": "success", "prediction": prediction}
-
+        prediction = net(input)
+        prediction = prediction.asnumpy().tolist()[0][0][0]
+        client.publish(topic='prediction', queueFullPolicy='AllOrException', payload=json.dumps({'status': 'success', 'prediction': '{}'.format(prediction)}))
+        return {'status': 'success', 'prediction': '{}'.format(prediction)}
 
     except Exception as e:
         logger.error('Failed to publish message: ' + repr(e))
-        return {"status": "fail"}
+        return {'status': 'fail'}
