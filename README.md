@@ -230,7 +230,8 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 
 - Go to https://console.aws.amazon.com/s3
 - Click 'workshop-iotwss3bucket-...'
-- Click ''
+- Click 'data'
+- Download and verify some dumped messages
 
 
 ### Train a new model
