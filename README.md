@@ -219,6 +219,34 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 - Click 'Subscribe'
 
 
+### Create an IoT Rule to send a notification
+
+- Go to https://console.aws.amazon.com/iot
+- Click 'Act'
+- Click 'Rules'
+- Click 'Create'
+- Name: 'SendNotification'
+- Rule query statement: 'SELECT * FROM 'prediction' where 'prediction' < 0.25'
+- Click 'Add action'
+- Select 'Send a message as an SNS push notification'
+- Click 'Configure action'
+- SNS target: Create
+- Name: 'MachineHealth'
+- Click 'Create'
+- Role: Create Role
+- Name: 'machinehealth_snsrole'
+- Click 'Create role'
+- Click 'Add action'
+
+
+- Go to https://console.aws.amazon.com/sns
+- Click 'Topics'
+- Click 'MachineHealth'
+- Click 'Create subscription'
+- Protocol: 'SMS'
+- Endpoint: 'Your phone number'
+- Click 'Create subscription'
+
 ### Monitor messages coming to Firehose
 
 - Go to https://console.aws.amazon.com/firehose
