@@ -1,0 +1,3 @@
+- zip c9_bootstrap_lambda.py and cfnresponse.py
+- upload to S3://prototypinglabs-workshop-public/lambda/c9/bootstrap/
+- put its link into the main Cloudformation template

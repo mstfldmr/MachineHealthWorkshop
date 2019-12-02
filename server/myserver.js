@@ -127,7 +127,7 @@ function post_initialize() {
             } else{
               return combined = input_data['input'][0][counter2].toString();
             }
-          }
+          });
         }
 
         let counter2 = 0;
