@@ -654,7 +654,7 @@ Resources:
             Action:
             - firehose:PutRecord
             - firehose:PutRecordBatch
-            Resource: !GetAtt FirehoseDeliveryStream.Arm
+            Resource: !GetAtt FirehoseDeliveryStream.Arn
 
   GreengrassGroup:
     Type: AWS::Greengrass::Group
