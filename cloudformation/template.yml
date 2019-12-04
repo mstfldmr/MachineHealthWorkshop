@@ -125,6 +125,8 @@ Resources:
 
   IoTWSS3Bucket:
     Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ["-", [!Ref 'AWS::StackName', "greengrassworkshop"] ]
   IoTWSIoTPolicy:
     Type: AWS::IoT::Policy
     Properties:
