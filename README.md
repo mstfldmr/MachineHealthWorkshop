@@ -2,23 +2,16 @@
 presented at re:Invent 2019\
 by Mustafa Aldemir
 
-## Use Case: Turbofan Degradation Prediction
+
+## Predictive Maintenance
 - Detect potential equipment failure & send notifications
 - LSTM (Long Short-term Memory) architecture implemented
 - Coded in Python with MXNet
-- Turbofan engine degradation simulation data set taken from NASA
+- Data set taken from NASA
 - The concept is applicable to other types of machines, data sets and algorithms
 
-## Sample data
-| Cycle | setting1 | ... | setting3 | sensor1 | ... | sensor21 | Remaining Useful Life (RUL) |
-|-------|----------|-----|----------|---------|-----|----------|-----------------------------|
-| 1     | 0.07     | ... | 1.40     | 518.67  | ... | 6.10     | 191                         |
-| 2     | 0.019    | ... | 2.56     | 514.26  | ... | 7.63     | 190                         |
-| 3     | 0.043    | ... | 0.30     | 481.95  | ... | 2.35     | 189                         |
-| 4     | 0.061    | ... | 0.00     | 499.41  | ... | 10.46    | 188                         |
 
-## Architecture
-to be completed...
+Please refer to the presentation in presentation folder for details.
 
 
 ## Steps
@@ -180,7 +173,7 @@ In this step, you will add Lambda functions, subscriptions, connector and ML res
 - Click 'Add a machine learning resource'
 - Resource name: 'lstmmodel'
 - Model source: 'Upload a model in S3'
-- Select 'workshop-iotwss3bucket-...', the bucket you created earlier
+- Select 'machinehealth-greengrassworkshop', the bucket you created earlier
 - Select 'model/model.tar.gz'
 - Local path: '/trained_models'
 - Lambda function affiliations: 'cloud9-PredictionLambda-...'
@@ -257,7 +250,7 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 ### Check data stored in S3
 
 - Go to https://console.aws.amazon.com/s3
-- Click 'workshop-iotwss3bucket-...'
+- Click 'machinehealth-greengrassworkshop'
 - Click 'data'
 - Download and verify some dumped messages
 
@@ -274,3 +267,15 @@ You can see Greengrass logs in `/greengrass/ggc/var/log/` folder in Cloud9.
 - Click 'Restart and Run All'
 
 This notebook trains a model with the provided algorithm based on the original Turbofan Engine Degradation Simulation Data Set. In order to trained a model based on the collected data, the data must be labelled.
+
+
+### Delete resources
+
+In order to avoid costs, please don't forget to delete the resources you created in the workshop.
+
+- Go to https://console.aws.amazon.com/cloudformation/
+- Click 'machinehealth' on the left column
+- Click 'Delete'
+- Click 'Delete stack'
+- Repeat this for 'cloud9-PredictionLambda' and 'cloud9-OPCUALambda' stacks
+- After a few minutes, confirm that the stacks are deleted
