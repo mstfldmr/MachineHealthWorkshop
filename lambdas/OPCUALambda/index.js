@@ -8,7 +8,7 @@ const iot = new Greengrass.IotData();
 
 
 const serverName = 'MyServer';
-const endpointUrl = 'opc.tcp://ec2-52-72-163-17.compute-1.amazonaws.com:4334/UA/Turbofan';
+const endpointUrl = 'opc.tcp://ec2-18-206-212-96.compute-1.amazonaws.com:4334/UA/Turbofan';
 const nodeId = "ns=1;i=1002";
 
 let dataQueue = { "input": [[]]};
